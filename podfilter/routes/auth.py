@@ -1,7 +1,5 @@
 """Authentication routes."""
 
-from typing import Annotated
-
 from litestar import Request, Response, post
 from litestar.exceptions import HTTPException
 from litestar.status_codes import HTTP_400_BAD_REQUEST, HTTP_401_UNAUTHORIZED
@@ -9,7 +7,7 @@ from pydantic import BaseModel
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from ..auth import authenticate_user, create_access_token, hash_password
+from ..auth import ACCESS_TOKEN_EXPIRE_MINUTES, authenticate_user, create_access_token, hash_password
 from litestar.di import Provide
 
 from ..database import get_db_session
@@ -66,17 +64,33 @@ async def register(
 async def login(
   data: UserLogin,
   session: AsyncSession,
-) -> Token:
+) -> Response[dict[str, str]]:
   """Login user and return JWT token."""
   user = await authenticate_user(session, data.username, data.password)
   if not user:
     raise HTTPException(status_code=HTTP_401_UNAUTHORIZED, detail="Incorrect username or password")
 
   access_token = create_access_token(data={"sub": user.username})
-  return Token(access_token=access_token, token_type="bearer")
+
+  response = Response(
+    content=Token(access_token=access_token, token_type="bearer").dict(),
+    media_type="application/json",
+  )
+  response.set_cookie(
+    key="access_token",
+    value=access_token,
+    httponly=True,
+    secure=False,
+    samesite="lax",
+    max_age=ACCESS_TOKEN_EXPIRE_MINUTES * 60,
+    path="/",
+  )
+  return response
 
 
 @post("/api/logout")
-async def logout(request: Request) -> dict[str, str]:
+async def logout(_request: Request) -> Response[dict[str, str]]:
   """Logout user (client-side token removal)."""
-  return {"message": "Logged out successfully"}
+  response = Response({"message": "Logged out successfully"}, media_type="application/json")
+  response.delete_cookie("access_token", path="/")
+  return response

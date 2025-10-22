@@ -24,7 +24,8 @@ async function logout() {
             method: 'POST',
             headers: {
                 'Authorization': 'Bearer ' + getAuthToken()
-            }
+            },
+            credentials: 'same-origin'
         });
         
         removeAuthToken();
@@ -83,7 +84,8 @@ async function apiRequest(url, options = {}) {
     
     const response = await fetch(url, {
         ...options,
-        headers
+        headers,
+        credentials: options.credentials || 'same-origin'
     });
     
     if (response.status === 401) {
@@ -135,6 +137,7 @@ document.addEventListener('DOMContentLoaded', function() {
                     ...options.headers,
                     'Authorization': 'Bearer ' + getAuthToken()
                 };
+                options.credentials = options.credentials || 'same-origin';
             }
             return originalFetch(url, options);
         };

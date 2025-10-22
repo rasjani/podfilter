@@ -128,6 +128,7 @@ async function addFeed() {
                 'Content-Type': 'application/json',
                 'Authorization': 'Bearer ' + localStorage.getItem('access_token')
             },
+            credentials: 'same-origin',
             body: JSON.stringify(data)
         });
         
@@ -152,6 +153,7 @@ async function importOpml() {
             headers: {
                 'Authorization': 'Bearer ' + localStorage.getItem('access_token')
             },
+            credentials: 'same-origin',
             body: formData
         });
         
