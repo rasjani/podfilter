@@ -155,6 +155,7 @@ async function addFilter() {
                 'Content-Type': 'application/json',
                 'Authorization': 'Bearer ' + localStorage.getItem('access_token')
             },
+            credentials: 'same-origin',
             body: JSON.stringify(data)
         });
         
@@ -179,7 +180,8 @@ async function deleteFilter(ruleId) {
             method: 'DELETE',
             headers: {
                 'Authorization': 'Bearer ' + localStorage.getItem('access_token')
-            }
+            },
+            credentials: 'same-origin'
         });
         
         if (response.ok) {

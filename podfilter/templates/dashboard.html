@@ -141,6 +141,7 @@ async function importOpml() {
             headers: {
                 'Authorization': 'Bearer ' + localStorage.getItem('access_token')
             },
+            credentials: 'same-origin',
             body: formData
         });
         
