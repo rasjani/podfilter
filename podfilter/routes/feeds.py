@@ -1,6 +1,6 @@
 """Feed management routes."""
 
-from typing import Annotated, List, Optional
+from typing import List, Optional
 
 from litestar import Request, get, post, put, delete
 from litestar.exceptions import HTTPException
@@ -8,6 +8,8 @@ from litestar.status_codes import HTTP_404_NOT_FOUND, HTTP_400_BAD_REQUEST, HTTP
 from pydantic import BaseModel
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
+
+from litestar.di import Provide
 
 from ..database import get_db_session
 from ..models import User, Feed, Episode, FilterRule
@@ -46,7 +48,7 @@ class FilterRuleResponse(BaseModel):
     is_active: bool
 
 
-async def get_current_user(request: Request, session: Annotated[AsyncSession, get_db_session]) -> User:
+async def get_current_user(request: Request, session: AsyncSession) -> User:
     """Get current authenticated user from request."""
     from ..auth import verify_token, get_user_by_username
     
@@ -66,11 +68,11 @@ async def get_current_user(request: Request, session: Annotated[AsyncSession, ge
     return user
 
 
-@post("/api/feeds")
+@post("/api/feeds", dependencies={"session": Provide(get_db_session)})
 async def add_feed(
     data: FeedCreate,
     request: Request,
-    session: Annotated[AsyncSession, get_db_session],
+    session: AsyncSession,
 ) -> FeedResponse:
     """Add a new RSS feed."""
     user = await get_current_user(request, session)
@@ -118,10 +120,10 @@ async def add_feed(
     )
 
 
-@post("/api/feeds/import-opml")
+@post("/api/feeds/import-opml", dependencies={"session": Provide(get_db_session)})
 async def import_opml(
     request: Request,
-    session: Annotated[AsyncSession, get_db_session],
+    session: AsyncSession,
 ) -> dict[str, str]:
     """Import feeds from OPML file."""
     user = await get_current_user(request, session)
@@ -180,10 +182,10 @@ async def import_opml(
     return {"message": f"Imported {imported_count} feeds successfully"}
 
 
-@get("/api/feeds")
+@get("/api/feeds", dependencies={"session": Provide(get_db_session)})
 async def list_feeds(
     request: Request,
-    session: Annotated[AsyncSession, get_db_session],
+    session: AsyncSession,
 ) -> List[FeedResponse]:
     """List user's feeds."""
     user = await get_current_user(request, session)
@@ -205,11 +207,11 @@ async def list_feeds(
     ]
 
 
-@post("/api/filter-rules")
+@post("/api/filter-rules", dependencies={"session": Provide(get_db_session)})
 async def add_filter_rule(
     data: FilterRuleCreate,
     request: Request,
-    session: Annotated[AsyncSession, get_db_session],
+    session: AsyncSession,
 ) -> FilterRuleResponse:
     """Add a new filter rule."""
     user = await get_current_user(request, session)
@@ -242,10 +244,10 @@ async def add_filter_rule(
     )
 
 
-@get("/api/filter-rules")
+@get("/api/filter-rules", dependencies={"session": Provide(get_db_session)})
 async def list_filter_rules(
     request: Request,
-    session: Annotated[AsyncSession, get_db_session],
+    session: AsyncSession,
 ) -> List[FilterRuleResponse]:
     """List user's filter rules."""
     user = await get_current_user(request, session)
@@ -268,11 +270,11 @@ async def list_filter_rules(
     ]
 
 
-@delete("/api/filter-rules/{rule_id:int}", status_code=HTTP_204_NO_CONTENT)
+@delete("/api/filter-rules/{rule_id:int}", status_code=HTTP_204_NO_CONTENT, dependencies={"session": Provide(get_db_session)})
 async def delete_filter_rule(
     rule_id: int,
     request: Request,
-    session: Annotated[AsyncSession, get_db_session],
+    session: AsyncSession,
 ) -> None:
     """Delete a filter rule."""
     user = await get_current_user(request, session)

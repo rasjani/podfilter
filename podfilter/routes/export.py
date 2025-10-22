@@ -9,12 +9,14 @@ from litestar.status_codes import HTTP_404_NOT_FOUND
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
+from litestar.di import Provide
+
 from ..database import get_db_session
 from ..models import User, Feed, Episode, FilterRule
 from ..utils import RSSGenerator, OPMLHandler, FilterEngine
 
 
-async def get_current_user(request: Request, session: Annotated[AsyncSession, get_db_session]) -> User:
+async def get_current_user(request: Request, session: AsyncSession) -> User:
     """Get current authenticated user from request."""
     from ..auth import verify_token, get_user_by_username
     
@@ -34,11 +36,11 @@ async def get_current_user(request: Request, session: Annotated[AsyncSession, ge
     return user
 
 
-@get("/export/rss/{feed_id:int}")
+@get("/export/rss/{feed_id:int}", dependencies={"session": Provide(get_db_session)})
 async def export_rss_feed(
     feed_id: int,
     request: Request,
-    session: Annotated[AsyncSession, get_db_session],
+    session: AsyncSession,
 ) -> Response:
     """Export filtered RSS feed."""
     user = await get_current_user(request, session)
@@ -110,10 +112,10 @@ async def export_rss_feed(
     )
 
 
-@get("/export/opml")
+@get("/export/opml", dependencies={"session": Provide(get_db_session)})
 async def export_opml(
     request: Request,
-    session: Annotated[AsyncSession, get_db_session],
+    session: AsyncSession,
 ) -> Response:
     """Export all feeds as OPML."""
     user = await get_current_user(request, session)

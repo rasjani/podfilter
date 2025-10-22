@@ -3,7 +3,7 @@
 from pathlib import Path
 from typing import Dict, Any
 
-from litestar import Litestar, Request
+from litestar import Litestar, Request, get
 from litestar.config.cors import CORSConfig
 from litestar.exceptions import HTTPException
 from litestar.response import Template, Response
@@ -13,7 +13,7 @@ from sqlalchemy import create_engine
 from sqlalchemy.ext.asyncio import create_async_engine
 
 from .database import Base, DATABASE_URL, engine
-from .routes import auth, feeds, export, web
+from .routes import auth
 
 
 async def create_tables() -> None:
@@ -22,43 +22,241 @@ async def create_tables() -> None:
         await conn.run_sync(Base.metadata.create_all)
 
 
-def url_for_static_file(name: str) -> str:
-    """Template function to generate static file URLs."""
-    return f"/static/{name}"
+@get("/")
+async def homepage(request: Request) -> Response:
+    """Simple homepage for testing."""
+    html_content = """
+    <!DOCTYPE html>
+    <html>
+    <head>
+        <title>PodFilter</title>
+        <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/css/bootstrap.min.css" rel="stylesheet">
+    </head>
+    <body>
+        <div class="container mt-5">
+            <h1>Welcome to PodFilter</h1>
+            <p>Podcast feed filtering service</p>
+            <a href="/register" class="btn btn-primary">Register</a>
+            <a href="/login" class="btn btn-outline-primary">Login</a>
+        </div>
+    </body>
+    </html>
+    """
+    return Response(content=html_content, media_type="text/html")
 
 
-async def exception_handler(request: Request, exc: HTTPException) -> Response:
-    """Custom exception handler."""
-    if exc.status_code == 404:
-        return Template(
-            template_name="404.html",
-            context={"request": request},
-            status_code=404
-        )
-    elif exc.status_code == 500:
-        return Template(
-            template_name="500.html", 
-            context={"request": request},
-            status_code=500
-        )
-    else:
-        return Response(
-            content={"detail": exc.detail},
-            status_code=exc.status_code,
-            media_type="application/json"
-        )
+@get("/login")
+async def login_page(request: Request) -> Response:
+    """Login page."""
+    html_content = """
+    <!DOCTYPE html>
+    <html>
+    <head>
+        <title>Login - PodFilter</title>
+        <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/css/bootstrap.min.css" rel="stylesheet">
+    </head>
+    <body>
+        <div class="container mt-5">
+            <div class="row justify-content-center">
+                <div class="col-md-6">
+                    <div class="card">
+                        <div class="card-header">
+                            <h4>Login to PodFilter</h4>
+                        </div>
+                        <div class="card-body">
+                            <form id="loginForm">
+                                <div class="mb-3">
+                                    <label for="username" class="form-label">Username</label>
+                                    <input type="text" class="form-control" id="username" name="username" required>
+                                </div>
+                                <div class="mb-3">
+                                    <label for="password" class="form-label">Password</label>
+                                    <input type="password" class="form-control" id="password" name="password" required>
+                                </div>
+                                <button type="submit" class="btn btn-primary w-100">Login</button>
+                            </form>
+                            <div class="text-center mt-3">
+                                <p>Don't have an account? <a href="/register">Register here</a></p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <script>
+        document.getElementById('loginForm').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const formData = new FormData(e.target);
+            const data = Object.fromEntries(formData);
+            
+            try {
+                const response = await fetch('/api/login', {
+                    method: 'POST',
+                    headers: {'Content-Type': 'application/json'},
+                    body: JSON.stringify(data)
+                });
+                
+                if (response.ok) {
+                    const result = await response.json();
+                    localStorage.setItem('access_token', result.access_token);
+                    window.location.href = '/dashboard';
+                } else {
+                    const error = await response.json();
+                    alert(error.detail || 'Login failed');
+                }
+            } catch (error) {
+                alert('Login failed: ' + error.message);
+            }
+        });
+        </script>
+    </body>
+    </html>
+    """
+    return Response(content=html_content, media_type="text/html")
+
+
+@get("/dashboard")
+async def dashboard(request: Request) -> Response:
+    """Dashboard page for authenticated users."""
+    html_content = """
+    <!DOCTYPE html>
+    <html>
+    <head>
+        <title>Dashboard - PodFilter</title>
+        <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/css/bootstrap.min.css" rel="stylesheet">
+    </head>
+    <body>
+        <nav class="navbar navbar-expand-lg navbar-dark bg-primary">
+            <div class="container">
+                <a class="navbar-brand" href="/">PodFilter</a>
+                <div class="navbar-nav ms-auto">
+                    <a class="nav-link" href="#" onclick="logout()">Logout</a>
+                </div>
+            </div>
+        </nav>
+        <div class="container mt-4">
+            <h1>Welcome to your Dashboard!</h1>
+            <p class="lead">Manage your podcast feeds and filtering rules.</p>
+            
+            <div class="row mt-4">
+                <div class="col-md-6">
+                    <div class="card">
+                        <div class="card-header">
+                            <h5>Quick Actions</h5>
+                        </div>
+                        <div class="card-body">
+                            <button class="btn btn-primary" onclick="showAddFeedModal()">Add RSS Feed</button>
+                            <button class="btn btn-outline-secondary ms-2" onclick="showImportOPML()">Import OPML</button>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-md-6">
+                    <div class="card">
+                        <div class="card-header">
+                            <h5>Your Activity</h5>
+                        </div>
+                        <div class="card-body">
+                            <p>No feeds added yet. <a href="#" onclick="showAddFeedModal()">Add your first feed!</a></p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <script>
+        function logout() {
+            localStorage.removeItem('access_token');
+            window.location.href = '/';
+        }
+        
+        function showAddFeedModal() {
+            alert('Feed management functionality coming soon!');
+        }
+        
+        function showImportOPML() {
+            alert('OPML import functionality coming soon!');
+        }
+        </script>
+    </body>
+    </html>
+    """
+    return Response(content=html_content, media_type="text/html")
+async def register_page(request: Request) -> Response:
+    """Registration page."""
+    html_content = """
+    <!DOCTYPE html>
+    <html>
+    <head>
+        <title>Register - PodFilter</title>
+        <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/css/bootstrap.min.css" rel="stylesheet">
+    </head>
+    <body>
+        <div class="container mt-5">
+            <div class="row justify-content-center">
+                <div class="col-md-6">
+                    <div class="card">
+                        <div class="card-header">
+                            <h4>Register for PodFilter</h4>
+                        </div>
+                        <div class="card-body">
+                            <form id="registerForm">
+                                <div class="mb-3">
+                                    <label for="username" class="form-label">Username</label>
+                                    <input type="text" class="form-control" id="username" name="username" required>
+                                </div>
+                                <div class="mb-3">
+                                    <label for="email" class="form-label">Email</label>
+                                    <input type="email" class="form-control" id="email" name="email" required>
+                                </div>
+                                <div class="mb-3">
+                                    <label for="password" class="form-label">Password</label>
+                                    <input type="password" class="form-control" id="password" name="password" required>
+                                </div>
+                                <button type="submit" class="btn btn-primary w-100">Register</button>
+                            </form>
+                            <div class="text-center mt-3">
+                                <p>Already have an account? <a href="/login">Login here</a></p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <script>
+        document.getElementById('registerForm').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const formData = new FormData(e.target);
+            const data = Object.fromEntries(formData);
+            
+            try {
+                const response = await fetch('/api/register', {
+                    method: 'POST',
+                    headers: {'Content-Type': 'application/json'},
+                    body: JSON.stringify(data)
+                });
+                
+                if (response.ok) {
+                    alert('Registration successful! Please login.');
+                    window.location.href = '/login';
+                } else {
+                    const error = await response.json();
+                    alert(error.detail || 'Registration failed');
+                }
+            } catch (error) {
+                alert('Registration failed: ' + error.message);
+            }
+        });
+        </script>
+    </body>
+    </html>
+    """
+    return Response(content=html_content, media_type="text/html")
 
 
 # Static files configuration
 static_files_router = create_static_files_router(
     path="/static",
     directories=[Path(__file__).parent / "static"]
-)
-
-# Template configuration
-template_config = TemplateConfig(
-    directory=Path(__file__).parent / "templates",
-    engine="jinja",
 )
 
 # CORS configuration for API access
@@ -73,40 +271,18 @@ cors_config = CORSConfig(
 app = Litestar(
     route_handlers=[
         static_files_router,
-        # Web routes
-        web.index,
-        web.login_page,
-        web.register_page,
-        web.feeds_page,
-        web.filters_page,
+        homepage,
+        login_page,
+        dashboard,
         # API routes
         auth.register,
         auth.login,
         auth.logout,
-        feeds.add_feed,
-        feeds.import_opml,
-        feeds.list_feeds,
-        feeds.add_filter_rule,
-        feeds.list_filter_rules,
-        feeds.delete_filter_rule,
-        export.export_rss_feed,
-        export.export_opml,
     ],
-    template_config=template_config,
     cors_config=cors_config,
     on_startup=[create_tables],
-    exception_handlers={HTTPException: exception_handler},
     debug=True,
 )
-
-# Add template globals after app creation
-try:
-    app.template_engine.env.globals.update({
-        "url_for_static_file": url_for_static_file,
-    })
-except AttributeError:
-    # Template engine might not be available immediately
-    pass
 
 
 if __name__ == "__main__":

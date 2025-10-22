@@ -10,6 +10,8 @@ from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from ..auth import authenticate_user, create_access_token, hash_password
+from litestar.di import Provide
+
 from ..database import get_db_session
 from ..models import User
 
@@ -33,10 +35,10 @@ class Token(BaseModel):
     token_type: str
 
 
-@post("/api/register")
+@post("/api/register", dependencies={"session": Provide(get_db_session)})
 async def register(
     data: UserCreate,
-    session: Annotated[AsyncSession, get_db_session],
+    session: AsyncSession,
 ) -> dict[str, str]:
     """Register a new user."""
     # Check if user already exists
@@ -61,10 +63,10 @@ async def register(
     return {"message": "User created successfully"}
 
 
-@post("/api/login")
+@post("/api/login", dependencies={"session": Provide(get_db_session)})
 async def login(
     data: UserLogin,
-    session: Annotated[AsyncSession, get_db_session],
+    session: AsyncSession,
 ) -> Token:
     """Login user and return JWT token."""
     user = await authenticate_user(session, data.username, data.password)

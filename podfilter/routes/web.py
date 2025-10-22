@@ -1,12 +1,14 @@
 """Web interface routes."""
 
-from typing import Annotated, Optional
+from typing import Optional
 
 from litestar import Request, get, post
 from litestar.response import Template
 from litestar.exceptions import HTTPException
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
+
+from litestar.di import Provide
 
 from ..database import get_db_session
 from ..models import User, Feed, FilterRule
@@ -36,10 +38,10 @@ async def get_current_user_optional(request: Request, session: AsyncSession) -> 
     return user
 
 
-@get("/")
+@get("/", dependencies={"session": Provide(get_db_session)})
 async def index(
     request: Request,
-    session: Annotated[AsyncSession, get_db_session],
+    session: AsyncSession,
 ) -> Template:
     """Home page - dashboard for authenticated users, landing page for others."""
     user = await get_current_user_optional(request, session)
@@ -80,10 +82,10 @@ async def register_page(request: Request) -> Template:
     return Template(template_name="register.html")
 
 
-@get("/feeds")
+@get("/feeds", dependencies={"session": Provide(get_db_session)})
 async def feeds_page(
     request: Request,
-    session: Annotated[AsyncSession, get_db_session],
+    session: AsyncSession,
 ) -> Template:
     """Feeds management page."""
     user = await get_current_user_optional(request, session)
@@ -101,10 +103,10 @@ async def feeds_page(
     )
 
 
-@get("/filters")
+@get("/filters", dependencies={"session": Provide(get_db_session)})
 async def filters_page(
     request: Request,
-    session: Annotated[AsyncSession, get_db_session],
+    session: AsyncSession,
 ) -> Template:
     """Filter rules management page."""
     user = await get_current_user_optional(request, session)
