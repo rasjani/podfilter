@@ -49,6 +49,7 @@ jobs:
         env:
           BASE_URL: http://127.0.0.1:8000
         run: |
+          sqlite3 podfilter.db < acceptance/sql/users.sql
           python -mrobot --nostatusrc -d acceptance/results acceptance/suites
           ghareports -r acceptance/results/output.xml || /bin/true
 
@@ -57,7 +58,9 @@ jobs:
         uses: actions/upload-artifact@v4
         with:
           name: robot-acceptance-results
-          path: acceptance/results
+          path: |
+            acceptance/results
+            podfilter.db
 
       - name: Stop application
         if: always()

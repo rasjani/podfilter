@@ -19,3 +19,17 @@ Register Button Opens Registration Form
 Login Link Navigates To Login Form
   Click  a.btn:has-text("Login")
   Wait For Elements State  css=form#loginForm  state=visible  timeout=5s
+
+  Fill Text  css=input#username  ${USER_NAME}
+  Fill Text  css=input#password  ${USER_PASSWORD}
+
+  ${promise}=   Promise To
+  ...   Wait For Navigation
+  ...   /
+  ...   timeout=5 seconds
+  ...   wait_until=domcontentloaded
+
+  Click   button[type="submit"]
+
+
+  Wait For   ${promise}

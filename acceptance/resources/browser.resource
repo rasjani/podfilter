@@ -6,6 +6,10 @@ Library  OperatingSystem
 ${BASE_URL}    http://localhost:8000
 ${BROWSER}    chromium
 
+
+${USER_NAME}    test
+${USER_PASSWORD}    test
+
 *** Keywords ***
 Initialize Variables
   ${url}=  Get Environment Variable  BASE_URL   default=http://localhost:8000
@@ -16,6 +20,8 @@ Initialize Variables
 Open Browser Session
   Initialize Variables
   New Browser  browser=${BROWSER}  headless=${TRUE}
+  New Context
+  ...   baseURL=${BASE_URL}
 
 Close Browser Session
   Close Browser
