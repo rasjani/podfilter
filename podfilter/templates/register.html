@@ -1,0 +1,63 @@
+{% extends "base.html" %}
+
+{% block title %}Register - PodFilter{% endblock %}
+
+{% block content %}
+<div class="row justify-content-center">
+    <div class="col-md-6 col-lg-5">
+        <div class="card">
+            <div class="card-header">
+                <h4 class="mb-0">Register</h4>
+            </div>
+            <div class="card-body">
+                <form id="registerForm">
+                    <div class="mb-3">
+                        <label for="username" class="form-label">Username</label>
+                        <input type="text" class="form-control" id="username" name="username" required>
+                    </div>
+                    <div class="mb-3">
+                        <label for="email" class="form-label">Email</label>
+                        <input type="email" class="form-control" id="email" name="email" required>
+                    </div>
+                    <div class="mb-3">
+                        <label for="password" class="form-label">Password</label>
+                        <input type="password" class="form-control" id="password" name="password" required>
+                    </div>
+                    <button type="submit" class="btn btn-primary w-100">Register</button>
+                </form>
+                <div class="text-center mt-3">
+                    <p>Already have an account? <a href="/login">Login here</a></p>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+document.getElementById('registerForm').addEventListener('submit', async (e) => {
+    e.preventDefault();
+    const formData = new FormData(e.target);
+    const data = Object.fromEntries(formData);
+    
+    try {
+        const response = await fetch('/api/register', {
+            method: 'POST',
+            headers: {'Content-Type': 'application/json'},
+            body: JSON.stringify(data)
+        });
+        
+        if (response.ok) {
+            alert('Registration successful! Please login.');
+            window.location.href = '/login';
+        } else {
+            const error = await response.json();
+            alert(error.detail || 'Registration failed');
+        }
+    } catch (error) {
+        alert('Registration failed: ' + error.message);
+    }
+});
+</script>
+{% endblock %}
