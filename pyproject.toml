@@ -41,7 +41,9 @@ dev = [
     "ruff>=0.1.0",
     "mypy>=1.5.0",
     "robotframework>=6.1",
-    "robotframework-browser>=18.0.0",
+    "robotframework-browser>=19.10.0",
+    "robotframework-browser-batteries>=19.10.0",
+    "robotframework-ghareports>=0.9.0",
 ]
 
 [tool.setuptools.packages.find]
