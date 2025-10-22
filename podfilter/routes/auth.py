@@ -18,6 +18,7 @@ from ..models import User
 
 class UserCreate(BaseModel):
     """User creation model."""
+
     username: str
     email: str
     password: str
@@ -25,12 +26,14 @@ class UserCreate(BaseModel):
 
 class UserLogin(BaseModel):
     """User login model."""
+
     username: str
     password: str
 
 
 class Token(BaseModel):
     """Token response model."""
+
     access_token: str
     token_type: str
 
@@ -45,21 +48,17 @@ async def register(
     result = await session.execute(select(User).where(User.username == data.username))
     if result.scalar_one_or_none():
         raise HTTPException(status_code=HTTP_400_BAD_REQUEST, detail="Username already exists")
-    
+
     result = await session.execute(select(User).where(User.email == data.email))
     if result.scalar_one_or_none():
         raise HTTPException(status_code=HTTP_400_BAD_REQUEST, detail="Email already exists")
-    
+
     # Create new user
     hashed_password = hash_password(data.password)
-    user = User(
-        username=data.username,
-        email=data.email,
-        password_hash=hashed_password
-    )
+    user = User(username=data.username, email=data.email, password_hash=hashed_password)
     session.add(user)
     await session.commit()
-    
+
     return {"message": "User created successfully"}
 
 
@@ -71,11 +70,8 @@ async def login(
     """Login user and return JWT token."""
     user = await authenticate_user(session, data.username, data.password)
     if not user:
-        raise HTTPException(
-            status_code=HTTP_401_UNAUTHORIZED,
-            detail="Incorrect username or password"
-        )
-    
+        raise HTTPException(status_code=HTTP_401_UNAUTHORIZED, detail="Incorrect username or password")
+
     access_token = create_access_token(data={"sub": user.username})
     return Token(access_token=access_token, token_type="bearer")
 

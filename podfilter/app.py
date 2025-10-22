@@ -252,6 +252,8 @@ async def dashboard(request: Request) -> Response:
     </html>
     """
     return Response(content=html_content, media_type="text/html")
+
+
 async def register_page(request: Request) -> Response:
     """Registration page."""
     html_content = """
@@ -325,17 +327,11 @@ async def register_page(request: Request) -> Response:
 
 
 # Static files configuration
-static_files_router = create_static_files_router(
-    path="/static",
-    directories=[Path(__file__).parent / "static"]
-)
+static_files_router = create_static_files_router(path="/static", directories=[Path(__file__).parent / "static"])
 
 # CORS configuration for API access
 cors_config = CORSConfig(
-    allow_origins=["*"],
-    allow_methods=["GET", "POST", "PUT", "DELETE"],
-    allow_headers=["*"],
-    allow_credentials=True
+    allow_origins=["*"], allow_methods=["GET", "POST", "PUT", "DELETE"], allow_headers=["*"], allow_credentials=True
 )
 
 # Create Litestar application
@@ -358,4 +354,5 @@ app = Litestar(
 
 if __name__ == "__main__":
     import uvicorn
+
     uvicorn.run(app, host="0.0.0.0", port=8000, reload=True)

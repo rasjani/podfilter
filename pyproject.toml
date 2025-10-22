@@ -47,14 +47,17 @@ where = ["."]
 include = ["podfilter*"]
 
 [tool.black]
-line-length = 88
+line-length = 130
 target-version = ['py311']
 
 [tool.ruff]
-line-length = 88
+line-length = 130
 target-version = "py311"
 select = ["E", "W", "F", "I", "N", "UP", "YTT", "ANN", "S", "BLE", "B", "A", "COM", "C4", "DTZ", "T10", "EM", "EXE", "ISC", "ICN", "G", "INP", "PIE", "T20", "PYI", "PT", "Q", "RSE", "RET", "SLF", "SIM", "TID", "TCH", "ARG", "PTH", "ERA", "PD", "PGH", "PL", "TRY", "NPY", "RUF"]
 ignore = ["ANN101", "ANN102", "S101", "PLR0913"]
+
+[tool.ruff.format]
+quote-style = "double"
 
 [tool.mypy]
 python_version = "3.11"
