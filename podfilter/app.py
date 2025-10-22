@@ -13,7 +13,8 @@ from sqlalchemy import create_engine
 from sqlalchemy.ext.asyncio import create_async_engine
 
 from .database import Base, DATABASE_URL, engine
-from .routes import auth
+from .routes import auth, feeds
+from .routes import auth, feeds
 
 
 async def create_tables() -> None:
@@ -169,13 +170,83 @@ async def dashboard(request: Request) -> Response:
             window.location.href = '/';
         }
         
-        function showAddFeedModal() {
-            alert('Feed management functionality coming soon!');
+        async function showAddFeedModal() {
+            const url = prompt('Enter RSS feed URL:');
+            if (url) {
+                try {
+                    const response = await fetch('/api/feeds', {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json',
+                            'Authorization': 'Bearer ' + localStorage.getItem('access_token')
+                        },
+                        body: JSON.stringify({url: url})
+                    });
+                    
+                    if (response.ok) {
+                        alert('Feed added successfully!');
+                        location.reload();
+                    } else {
+                        const error = await response.json();
+                        alert('Failed to add feed: ' + (error.detail || 'Unknown error'));
+                    }
+                } catch (error) {
+                    alert('Failed to add feed: ' + error.message);
+                }
+            }
         }
         
         function showImportOPML() {
             alert('OPML import functionality coming soon!');
         }
+        
+        // Load feeds on page load
+        async function loadFeeds() {
+            try {
+                const response = await fetch('/api/feeds', {
+                    headers: {
+                        'Authorization': 'Bearer ' + localStorage.getItem('access_token')
+                    }
+                });
+                
+                if (response.ok) {
+                    const feeds = await response.json();
+                    const activityDiv = document.querySelector('.card-body p');
+                    if (feeds.length > 0) {
+                        activityDiv.innerHTML = `You have ${feeds.length} feed(s). <a href="#" onclick="listFeeds()">View all feeds</a>`;
+                    }
+                }
+            } catch (error) {
+                console.error('Failed to load feeds:', error);
+            }
+        }
+        
+        async function listFeeds() {
+            try {
+                const response = await fetch('/api/feeds', {
+                    headers: {
+                        'Authorization': 'Bearer ' + localStorage.getItem('access_token')
+                    }
+                });
+                
+                if (response.ok) {
+                    const feeds = await response.json();
+                    let feedList = '<h5>Your Feeds:</h5><ul>';
+                    feeds.forEach(feed => {
+                        feedList += `<li><strong>${feed.title}</strong><br><small>${feed.original_url}</small></li>`;
+                    });
+                    feedList += '</ul>';
+                    
+                    const activityCard = document.querySelector('.card-body');
+                    activityCard.innerHTML = feedList;
+                }
+            } catch (error) {
+                alert('Failed to load feeds: ' + error.message);
+            }
+        }
+        
+        // Load feeds when page loads
+        document.addEventListener('DOMContentLoaded', loadFeeds);
         </script>
     </body>
     </html>
