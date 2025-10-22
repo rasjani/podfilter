@@ -7,7 +7,7 @@ from litestar.di import Provide
 
 
 class Base(DeclarativeBase):
-    """Base class for all database models."""
+  """Base class for all database models."""
 
 
 # Database configuration
@@ -17,6 +17,6 @@ async_session_maker = async_sessionmaker(engine, class_=AsyncSession, expire_on_
 
 
 async def get_db_session() -> AsyncSession:
-    """Get database session."""
-    async with async_session_maker() as session:
-        yield session
+  """Get database session."""
+  async with async_session_maker() as session:
+    yield session

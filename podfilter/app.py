@@ -18,15 +18,15 @@ from .routes import auth, feeds
 
 
 async def create_tables() -> None:
-    """Create database tables."""
-    async with engine.begin() as conn:
-        await conn.run_sync(Base.metadata.create_all)
+  """Create database tables."""
+  async with engine.begin() as conn:
+    await conn.run_sync(Base.metadata.create_all)
 
 
 @get("/")
 async def homepage(request: Request) -> Response:
-    """Simple homepage for testing."""
-    html_content = """
+  """Simple homepage for testing."""
+  html_content = """
     <!DOCTYPE html>
     <html>
     <head>
@@ -43,13 +43,13 @@ async def homepage(request: Request) -> Response:
     </body>
     </html>
     """
-    return Response(content=html_content, media_type="text/html")
+  return Response(content=html_content, media_type="text/html")
 
 
 @get("/login")
 async def login_page(request: Request) -> Response:
-    """Login page."""
-    html_content = """
+  """Login page."""
+  html_content = """
     <!DOCTYPE html>
     <html>
     <head>
@@ -113,13 +113,13 @@ async def login_page(request: Request) -> Response:
     </body>
     </html>
     """
-    return Response(content=html_content, media_type="text/html")
+  return Response(content=html_content, media_type="text/html")
 
 
 @get("/dashboard")
 async def dashboard(request: Request) -> Response:
-    """Dashboard page for authenticated users."""
-    html_content = """
+  """Dashboard page for authenticated users."""
+  html_content = """
     <!DOCTYPE html>
     <html>
     <head>
@@ -251,12 +251,12 @@ async def dashboard(request: Request) -> Response:
     </body>
     </html>
     """
-    return Response(content=html_content, media_type="text/html")
+  return Response(content=html_content, media_type="text/html")
 
 
 async def register_page(request: Request) -> Response:
-    """Registration page."""
-    html_content = """
+  """Registration page."""
+  html_content = """
     <!DOCTYPE html>
     <html>
     <head>
@@ -323,7 +323,7 @@ async def register_page(request: Request) -> Response:
     </body>
     </html>
     """
-    return Response(content=html_content, media_type="text/html")
+  return Response(content=html_content, media_type="text/html")
 
 
 # Static files configuration
@@ -331,28 +331,28 @@ static_files_router = create_static_files_router(path="/static", directories=[Pa
 
 # CORS configuration for API access
 cors_config = CORSConfig(
-    allow_origins=["*"], allow_methods=["GET", "POST", "PUT", "DELETE"], allow_headers=["*"], allow_credentials=True
+  allow_origins=["*"], allow_methods=["GET", "POST", "PUT", "DELETE"], allow_headers=["*"], allow_credentials=True
 )
 
 # Create Litestar application
 app = Litestar(
-    route_handlers=[
-        static_files_router,
-        homepage,
-        login_page,
-        dashboard,
-        # API routes
-        auth.register,
-        auth.login,
-        auth.logout,
-    ],
-    cors_config=cors_config,
-    on_startup=[create_tables],
-    debug=True,
+  route_handlers=[
+    static_files_router,
+    homepage,
+    login_page,
+    dashboard,
+    # API routes
+    auth.register,
+    auth.login,
+    auth.logout,
+  ],
+  cors_config=cors_config,
+  on_startup=[create_tables],
+  debug=True,
 )
 
 
 if __name__ == "__main__":
-    import uvicorn
+  import uvicorn
 
-    uvicorn.run(app, host="0.0.0.0", port=8000, reload=True)
+  uvicorn.run(app, host="0.0.0.0", port=8000, reload=True)
