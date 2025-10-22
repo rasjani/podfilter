@@ -73,3 +73,10 @@ logs/
 uploads/
 static/uploads/
 instance/
+
+# Acceptance test artifacts
+acceptance/results/
+log.html
+output.xml
+playwright-log.txt
+report.html
