@@ -3,7 +3,7 @@
 from typing import Optional
 
 from litestar import Request, get, post
-from litestar.response import Template
+from litestar.response import Template, Redirect
 from litestar.exceptions import HTTPException
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -91,30 +91,13 @@ async def feeds_page(
   feeds_result = await session.execute(select(Feed).where(Feed.user_id == user.id, Feed.is_active == True))
   feeds = feeds_result.scalars().all()
 
-  return Template(template_name="feeds.html", context={"user": user, "feeds": feeds})
-
-
-@get("/filters", dependencies={"session": Provide(get_db_session)})
-async def filters_page(
-  request: Request,
-  session: AsyncSession,
-) -> Template:
-  """Filter rules management page."""
-  user = await get_current_user_optional(request, session)
-  if not user:
-    raise HTTPException(status_code=401, detail="Authentication required")
-
-  feeds_result = await session.execute(select(Feed).where(Feed.user_id == user.id, Feed.is_active == True))
-  feeds = feeds_result.scalars().all()
-
   rules_result = await session.execute(select(FilterRule).where(FilterRule.user_id == user.id))
   filter_rules = rules_result.scalars().all()
 
-  return Template(
-    template_name="filters.html",
-    context={
-      "user": user,
-      "feeds": feeds,
-      "filter_rules": filter_rules,
-    },
-  )
+  return Template(template_name="feeds.html", context={"user": user, "feeds": feeds, "filter_rules": filter_rules})
+
+
+@get("/filters")
+async def filters_page() -> Redirect:
+  """Backwards compatible redirect to the combined feeds view."""
+  return Redirect(path="/feeds")
