@@ -31,5 +31,19 @@ Login Link Navigates To Login Form
 
   Click   button[type="submit"]
 
-
   Wait For   ${promise}
+  Wait For Elements State  css=h1:has-text("Welcome back")  state=visible  timeout=5s
+  Wait For Elements State  css=nav a.nav-link:has-text("Logout")  state=visible  timeout=5s
+
+  ${logout_promise}=   Promise To
+  ...   Wait For Navigation
+  ...   /
+  ...   timeout=5 seconds
+  ...   wait_until=domcontentloaded
+
+  Click  nav a.nav-link:has-text("Logout")
+
+  Wait For  ${logout_promise}
+  Wait For Elements State  css=a.btn-outline-primary.btn-lg  state=visible  timeout=5s
+  ${logout_links}=  Get Element Count  css=nav a.nav-link:has-text("Logout")
+  Should Be Equal As Integers  ${logout_links}  0
