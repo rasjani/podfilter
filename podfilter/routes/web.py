@@ -47,19 +47,15 @@ async def index(
   user = await get_current_user_optional(request, session)
 
   if user:
-    # Get user's feeds and filter rules for dashboard
+    # Get user's feeds for dashboard
     feeds_result = await session.execute(select(Feed).where(Feed.user_id == user.id, Feed.is_active == True))
     feeds = feeds_result.scalars().all()
-
-    rules_result = await session.execute(select(FilterRule).where(FilterRule.user_id == user.id))
-    filter_rules = rules_result.scalars().all()
 
     return Template(
       template_name="dashboard.html",
       context={
         "user": user,
         "feeds": feeds,
-        "filter_rules": filter_rules,
       },
     )
   else:
