@@ -258,7 +258,8 @@
 
 {% block scripts %}
 <script>
-let currentFeedId = 'all';
+const SELECTED_FEED_KEY = 'podfilter.selectedFeed';
+let currentFeedId = localStorage.getItem(SELECTED_FEED_KEY) || 'all';
 
 function showAddFeedModal() {
   new bootstrap.Modal(document.getElementById('addFeedModal')).show();
@@ -271,6 +272,7 @@ function showImportModal() {
 function selectFeed(feedId) {
   const normalizedId = feedId === null ? 'all' : String(feedId);
   currentFeedId = normalizedId;
+  persistSelectedFeed(currentFeedId);
 
   document.querySelectorAll('#feedList .list-group-item').forEach((button) => {
     button.classList.toggle('active', button.getAttribute('data-feed-id') === normalizedId);
@@ -279,6 +281,10 @@ function selectFeed(feedId) {
   document.querySelectorAll('#feedDetails .feed-detail').forEach((detail) => {
     detail.classList.toggle('d-none', detail.getAttribute('data-feed-id') !== normalizedId);
   });
+}
+
+function persistSelectedFeed(feedId) {
+  localStorage.setItem(SELECTED_FEED_KEY, feedId);
 }
 
 function openFilterModal(feedId, feedName) {
@@ -402,6 +408,17 @@ async function deleteFilter(ruleId) {
 }
 
 document.addEventListener('DOMContentLoaded', () => {
+  const storedFeedId = localStorage.getItem(SELECTED_FEED_KEY);
+  if (storedFeedId) {
+    currentFeedId = storedFeedId;
+  }
+
+  const feedButton = document.querySelector(`#feedList .list-group-item[data-feed-id="${currentFeedId}"]`);
+  if (!feedButton && currentFeedId !== 'all') {
+    currentFeedId = 'all';
+    persistSelectedFeed(currentFeedId);
+  }
+
   selectFeed(currentFeedId);
 });
 </script>
