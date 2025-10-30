@@ -27,13 +27,18 @@ async function logout() {
             },
             credentials: 'same-origin'
         });
-        
+        if (!response.ok) {
+            console.warn('Logout request failed with status', response.status);
+        }
+
         removeAuthToken();
-        window.location.href = '/';
+        localStorage.removeItem('podfilter.selectedFeed');
+        window.location.replace('/');
     } catch (error) {
         console.error('Logout error:', error);
         removeAuthToken();
-        window.location.href = '/';
+        localStorage.removeItem('podfilter.selectedFeed');
+        window.location.replace('/');
     }
 }
 
@@ -133,10 +138,13 @@ document.addEventListener('DOMContentLoaded', function() {
         const originalFetch = window.fetch;
         window.fetch = function(url, options = {}) {
             if (url.startsWith('/') && !url.startsWith('/static/')) {
-                options.headers = {
-                    ...options.headers,
-                    'Authorization': 'Bearer ' + getAuthToken()
-                };
+                const token = getAuthToken();
+                if (token) {
+                    options.headers = {
+                        ...options.headers,
+                        'Authorization': 'Bearer ' + token
+                    };
+                }
                 options.credentials = options.credentials || 'same-origin';
             }
             return originalFetch(url, options);
