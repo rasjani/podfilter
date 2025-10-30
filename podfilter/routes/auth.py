@@ -76,6 +76,7 @@ async def login(
     content=Token(access_token=access_token, token_type="bearer").dict(),
     media_type="application/json",
   )
+  response.delete_cookie("access_token", path="/")
   response.set_cookie(
     key="access_token",
     value=access_token,
@@ -89,8 +90,9 @@ async def login(
 
 
 @post("/api/logout")
-async def logout(_request: Request) -> Response[dict[str, str]]:
+async def logout(request: Request) -> Response[dict[str, str]]:
   """Logout user (client-side token removal)."""
+  _ = request
   response = Response({"message": "Logged out successfully"}, media_type="application/json")
   response.delete_cookie("access_token", path="/")
   return response
