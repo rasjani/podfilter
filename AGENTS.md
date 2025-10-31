@@ -7,13 +7,14 @@
 - `run.py` starts the development server, pointing to the default `podfilter.db` file in the repo root.
 
 ## Environment Setup
-- Use Python 3.11. Create an isolated env with `python -m venv .venv && source .venv/bin/activate`.
+- Use Python 3.13. Create an isolated env with `python -m venv .venv && source .venv/bin/activate`.
 - Install project and dev tooling via `pip install -e .[dev]`.
 - Override configuration (for example `DATABASE_URL`) through environment variables or a local `.env` ignored by Git.
 
 ## Build, Test, and Development Commands
 - `python run.py` — launch the Litestar app with uvicorn and hot reload.
-- `pytest` — run the test suite located in `tests/`.
+- `robot acceptance/suites` — run the end to end tests located in `acceptance/`.
+- `pytest tests/` — execute unit tests in `tests/` folder.
 - `ruff check podfilter tests` — lint; auto-fix when possible using `ruff check --fix`.
 - `ruff format .` or `black podfilter tests` — apply the shared 130-character formatting profile.
 - `mypy podfilter` — execute the strict typing gate before opening a pull request.
@@ -32,6 +33,7 @@
 - Match the existing Conventional Commit format (`type(scope): summary`), for example `chore(ci): update ruff config`.
 - Keep commits focused; document context, testing, and linked issues in the PR description.
 - Attach screenshots or sample payloads when changing UI templates or API schemas.
+- When creatin a feature or a bug request, always file it into github repository.
 
 ## Security & Configuration Tips
 - Store secrets in your shell environment or `.env`; never commit access tokens, feed URLs tied to users, or raw exports.
