@@ -1,37 +1,34 @@
 """Export routes for RSS and OPML."""
 
-from typing import Annotated
+from __future__ import annotations
 
 from litestar import Request, Response, get
-from litestar.exceptions import HTTPException
-from litestar.response import File
-from litestar.status_codes import HTTP_404_NOT_FOUND
-from sqlalchemy import select
-from sqlalchemy.ext.asyncio import AsyncSession
-
 from litestar.di import Provide
+from litestar.exceptions import HTTPException
+from litestar.status_codes import HTTP_401_UNAUTHORIZED, HTTP_404_NOT_FOUND
+from sqlalchemy import select
+from sqlalchemy.ext.asyncio import AsyncSession  # noqa: TC002
 
-from ..database import get_db_session
-from ..models import User, Feed, Episode, FilterRule
-from ..utils import RSSGenerator, OPMLHandler, FilterEngine
+from podfilter.auth import get_user_by_username, verify_token
+from podfilter.database import get_db_session
+from podfilter.models import Episode, Feed, FilterRule, User
+from podfilter.utils import FilterEngine, OPMLHandler, RSSGenerator
 
 
 async def get_current_user(request: Request, session: AsyncSession) -> User:
   """Get current authenticated user from request."""
-  from ..auth import verify_token, get_user_by_username
-
   auth_header = request.headers.get("Authorization")
   if not auth_header or not auth_header.startswith("Bearer "):
-    raise HTTPException(status_code=401, detail="Not authenticated")
+    raise HTTPException(status_code=HTTP_401_UNAUTHORIZED, detail="Not authenticated")
 
   token = auth_header.split(" ")[1]
   username = verify_token(token)
   if not username:
-    raise HTTPException(status_code=401, detail="Invalid token")
+    raise HTTPException(status_code=HTTP_401_UNAUTHORIZED, detail="Invalid token")
 
   user = await get_user_by_username(session, username)
   if not user:
-    raise HTTPException(status_code=401, detail="User not found")
+    raise HTTPException(status_code=HTTP_401_UNAUTHORIZED, detail="User not found")
 
   return user
 
@@ -60,8 +57,8 @@ async def export_rss_feed(
     select(FilterRule).where(
       (FilterRule.user_id == user.id)
       & ((FilterRule.feed_id == feed_id) | (FilterRule.feed_id.is_(None)))
-      & (FilterRule.is_active == True)
-    )
+      & (FilterRule.is_active.is_(True)),
+    ),
   )
   filter_rules = result.scalars().all()
 
@@ -117,7 +114,7 @@ async def export_opml(
   user = await get_current_user(request, session)
 
   # Get all user feeds
-  result = await session.execute(select(Feed).where(Feed.user_id == user.id, Feed.is_active == True))
+  result = await session.execute(select(Feed).where(Feed.user_id == user.id, Feed.is_active.is_(True)))
   feeds = result.scalars().all()
 
   # Convert to OPML format

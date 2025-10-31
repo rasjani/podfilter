@@ -1,17 +1,22 @@
 """Authentication routes."""
 
+from __future__ import annotations
+
 from litestar import Request, Response, post
+from litestar.di import Provide
 from litestar.exceptions import HTTPException
 from litestar.status_codes import HTTP_400_BAD_REQUEST, HTTP_401_UNAUTHORIZED
-from pydantic import BaseModel
+from pydantic import BaseModel, Field
 from sqlalchemy import select
-from sqlalchemy.ext.asyncio import AsyncSession
+from sqlalchemy.ext.asyncio import AsyncSession  # noqa: TC002
 
-from ..auth import ACCESS_TOKEN_EXPIRE_MINUTES, authenticate_user, create_access_token, hash_password
-from litestar.di import Provide
+from podfilter.auth import ACCESS_TOKEN_EXPIRE_MINUTES, authenticate_user, create_access_token, hash_password
+from podfilter.database import get_db_session
+from podfilter.models import User
 
-from ..database import get_db_session
-from ..models import User
+
+def _default_token_type() -> str:
+  return "bearer"
 
 
 class UserCreate(BaseModel):
@@ -33,7 +38,7 @@ class Token(BaseModel):
   """Token response model."""
 
   access_token: str
-  token_type: str
+  token_type: str = Field(default_factory=_default_token_type)
 
 
 @post("/api/register", dependencies={"session": Provide(get_db_session)})
@@ -73,7 +78,7 @@ async def login(
   access_token = create_access_token(data={"sub": user.username})
 
   response = Response(
-    content=Token(access_token=access_token, token_type="bearer").dict(),
+    content=Token(access_token=access_token).model_dump(),
     media_type="application/json",
   )
   response.delete_cookie("access_token", path="/")

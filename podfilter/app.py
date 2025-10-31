@@ -1,15 +1,16 @@
 """Main PodFilter application."""
 
+import os
 from pathlib import Path
 
 from litestar import Litestar
 from litestar.config.cors import CORSConfig
+from litestar.contrib.jinja import JinjaTemplateEngine
 from litestar.static_files import create_static_files_router
 from litestar.template.config import TemplateConfig
-from litestar.contrib.jinja import JinjaTemplateEngine
 
-from .database import Base, engine
-from .routes import auth, export, feeds, web
+from podfilter.database import Base, engine
+from podfilter.routes import auth, export, feeds, web
 
 
 async def create_tables() -> None:
@@ -68,4 +69,6 @@ app = Litestar(
 if __name__ == "__main__":
   import uvicorn
 
-  uvicorn.run(app, host="0.0.0.0", port=8000, reload=True)
+  host = os.getenv("PODFILTER_HOST", "127.0.0.1")
+  port = int(os.getenv("PODFILTER_PORT", "8000"))
+  uvicorn.run(app, host=host, port=port, reload=True)

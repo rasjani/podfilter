@@ -58,8 +58,10 @@ target-version = ['py311']
 line-length = 130
 indent-width = 2
 target-version = "py311"
+
+[tool.ruff.lint]
 select = ["E", "W", "F", "I", "N", "UP", "YTT", "ANN", "S", "BLE", "B", "A", "COM", "C4", "DTZ", "T10", "EM", "EXE", "ISC", "ICN", "G", "INP", "PIE", "T20", "PYI", "PT", "Q", "RSE", "RET", "SLF", "SIM", "TID", "TCH", "ARG", "PTH", "ERA", "PD", "PGH", "PL", "TRY", "NPY", "RUF"]
-ignore = ["ANN101", "ANN102", "S101", "PLR0913"]
+ignore = ["S101", "PLR0913","COM812"]
 
 [tool.ruff.format]
 quote-style = "double"

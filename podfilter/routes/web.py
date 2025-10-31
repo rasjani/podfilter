@@ -1,31 +1,25 @@
 """Web interface routes."""
 
-from typing import Optional
+from __future__ import annotations
 
-from litestar import Request, get, post
-from litestar.response import Template, Redirect
-from litestar.exceptions import HTTPException
-from sqlalchemy import select
-from sqlalchemy.ext.asyncio import AsyncSession
-
+from litestar import Request, get
 from litestar.di import Provide
+from litestar.exceptions import HTTPException
+from litestar.response import Redirect, Template
+from litestar.status_codes import HTTP_401_UNAUTHORIZED
+from sqlalchemy import select
+from sqlalchemy.ext.asyncio import AsyncSession  # noqa: TC002
 
-from ..database import get_db_session
-from ..models import User, Feed, FilterRule
-from ..auth import verify_token, get_user_by_username
+from podfilter.auth import get_user_by_username, verify_token
+from podfilter.database import get_db_session
+from podfilter.models import Feed, FilterRule, User
 
 
-async def get_current_user_optional(request: Request, session: AsyncSession) -> Optional[User]:
+async def get_current_user_optional(request: Request, session: AsyncSession) -> User | None:
   """Get current authenticated user from session cookie, return None if not authenticated."""
   # Check for session cookie or Authorization header
   auth_header = request.headers.get("Authorization")
-  token = None
-
-  if auth_header and auth_header.startswith("Bearer "):
-    token = auth_header.split(" ")[1]
-  else:
-    # Check for session cookie
-    token = request.cookies.get("access_token")
+  token = auth_header.split(" ")[1] if auth_header and auth_header.startswith("Bearer ") else request.cookies.get("access_token")
 
   if not token:
     return None
@@ -34,8 +28,7 @@ async def get_current_user_optional(request: Request, session: AsyncSession) -> 
   if not username:
     return None
 
-  user = await get_user_by_username(session, username)
-  return user
+  return await get_user_by_username(session, username)
 
 
 @get("/", dependencies={"session": Provide(get_db_session)})
@@ -46,31 +39,33 @@ async def index(
   """Home page - dashboard for authenticated users, landing page for others."""
   user = await get_current_user_optional(request, session)
 
-  if user:
-    # Get user's feeds for dashboard
-    feeds_result = await session.execute(select(Feed).where(Feed.user_id == user.id, Feed.is_active == True))
-    feeds = feeds_result.scalars().all()
-
-    return Template(
-      template_name="dashboard.html",
-      context={
-        "user": user,
-        "feeds": feeds,
-      },
-    )
-  else:
+  if not user:
     return Template(template_name="index.html")
+
+  # Get user's feeds for dashboard
+  feeds_result = await session.execute(select(Feed).where(Feed.user_id == user.id, Feed.is_active.is_(True)))
+  feeds = feeds_result.scalars().all()
+
+  return Template(
+    template_name="dashboard.html",
+    context={
+      "user": user,
+      "feeds": feeds,
+    },
+  )
 
 
 @get("/login")
 async def login_page(request: Request) -> Template:
   """Login page."""
+  _ = request
   return Template(template_name="login.html")
 
 
 @get("/register")
 async def register_page(request: Request) -> Template:
   """Registration page."""
+  _ = request
   return Template(template_name="register.html")
 
 
@@ -82,9 +77,9 @@ async def feeds_page(
   """Feeds management page."""
   user = await get_current_user_optional(request, session)
   if not user:
-    raise HTTPException(status_code=401, detail="Authentication required")
+    raise HTTPException(status_code=HTTP_401_UNAUTHORIZED, detail="Authentication required")
 
-  feeds_result = await session.execute(select(Feed).where(Feed.user_id == user.id, Feed.is_active == True))
+  feeds_result = await session.execute(select(Feed).where(Feed.user_id == user.id, Feed.is_active.is_(True)))
   feeds = feeds_result.scalars().all()
 
   rules_result = await session.execute(select(FilterRule).where(FilterRule.user_id == user.id))
