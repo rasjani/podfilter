@@ -18,6 +18,13 @@ import feedparser
 import httpx
 from opml import from_string
 
+try:  # pragma: no cover - lxml is an optional dependency of opml
+  from lxml.etree import XMLSyntaxError
+except ImportError:  # pragma: no cover
+  XMLSyntaxError = ValueError  # type: ignore[misc]
+
+INVALID_OPML_ERROR = "Invalid OPML file"
+
 
 class FeedParser:
   """RSS feed parser."""
@@ -63,27 +70,25 @@ class OPMLHandler:
     """Parse OPML content and extract feed URLs."""
     feeds: list[dict[str, str]] = []
 
-    def extract_feeds(outline: object) -> None:
-      if hasattr(outline, "xmlUrl") and outline.xmlUrl:
-        feeds.append(
-          {
-            "title": getattr(outline, "title", getattr(outline, "text", "Unknown Feed")),
-            "url": outline.xmlUrl,
-            "description": getattr(outline, "description", ""),
-          },
-        )
-
-      children = getattr(outline, "children", None) or getattr(outline, "_children", None) or []
-      for child in children:
-        extract_feeds(child)
-
     try:
-      opml_doc = from_string(opml_content)
-    except (AttributeError, TypeError, ValueError) as exc:
-      raise ValueError from exc
+      source: str | bytes = opml_content
+      if opml_content.lstrip().startswith("<?xml"):
+        source = opml_content.encode("utf-8")
+      opml_doc = from_string(source)
+    except (AttributeError, TypeError, ValueError, XMLSyntaxError) as exc:
+      raise ValueError(INVALID_OPML_ERROR) from exc
 
-    for outline in getattr(opml_doc, "outline", []):
-      extract_feeds(outline)
+    outlines = getattr(opml_doc, "_tree", None)
+    if outlines is None:
+      return feeds
+
+    for element in outlines.iterfind(".//outline"):
+      xml_url = element.attrib.get("xmlUrl")
+      if not xml_url:
+        continue
+      title = element.attrib.get("title") or element.attrib.get("text") or "Unknown Feed"
+      description = element.attrib.get("description", "")
+      feeds.append({"title": title, "url": xml_url, "description": description})
 
     return feeds
 
